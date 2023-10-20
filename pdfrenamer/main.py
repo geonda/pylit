@@ -127,7 +127,32 @@ def rename(target, format=None, tags=None):
 
             #if pdf2bib was able to find an identifer, and thus to retrieve the bibtex data, we use them to rename the file
             if result['metadata'] and result['identifier']:
+                # tmp solution
+                bibname = 'bibtex.bib'
+                #
                 logger.info(f"Found bibtex data and an identifier for this file: {result['identifier']} ({result['identifier_type']}).")
+                ifbibexists = os.path.exists(bibname)
+                logger.info(f"Checking if bibtex.bib exists: { ifbibexists}")
+
+                if ifbibexists:
+                    append_write = 'r+' # append if already exists
+                    logger.info(f"updating bibtex.bib")
+                else:
+                    append_write = 'w' # make a new file if not
+                    logger.info(f"creating bibtex.bib")
+
+                skip_bib_entry = False
+                with open(bibname, append_write) as f:
+                    if append_write!='w':
+                        for line in f.readlines():
+                            if result['identifier'] in line:
+                                skip_bib_entry = True
+                    if not skip_bib_entry:
+                        f.write(result['bibtex'])
+                        f.write('\n')
+
+                logger.info(f"Done working with bibtex.bib")
+                
                 metadata = result['metadata'].copy()
                 metadata_string = "\n\t"+"\n\t".join([f"{key} = \"{metadata[key]}\"" for key in metadata.keys()] ) 
                 logger.info("Found the following data:" + metadata_string)
@@ -139,7 +164,14 @@ def rename(target, format=None, tags=None):
                 NewPath = str(directory) + os.path.sep + NewName
                 NewPathWithExt = NewPath + ext
                 logger.info(f"The new file name is {NewPathWithExt}")
-                if (filename==NewPathWithExt):
+                
+                # few lines to get file name form file path (wrokaorund for *.pdf scan)
+                try: 
+                    tmp_filename= NewPathWithExt.split('/')[-1]
+                except:
+                    tmp_filename = NewPathWithExt
+                
+                if (filename==tmp_filename):
                     logger.info("The new file name is identical to the old one. Nothing will be changed")
                     result['path_new'] = NewPathWithExt
                 else:

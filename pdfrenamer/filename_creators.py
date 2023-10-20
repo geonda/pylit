@@ -21,6 +21,7 @@ AllowedTags = {"{YYYY}":" \t\t=\t Year of publication",
                 "{A3etal}":" \t=\t Last name of the first three authors (separated by comma), add \'et al.\' if more authors are present",
                 "{aAall}":" \t=\t First initial and last name of all authors (separated by comma)",
                 "{aAetal}":" \t=\t First initial and last name of the first author, add \'et al.\' if more authors are present",
+                '{pylit}':" \t=\t personal format: LastNameYY.pdf",
                 "{aA3etal}":" \t=\t First initial and last name of the first three authors (separated by comma), add \'et al.\' if more authors are present",
                 "{T}":" \t\t=\t Title"
                 #"{Tcamel}":" \t=\t Title in camel case (e.g., LoremIpsumDolorSitAmet)",
@@ -216,8 +217,25 @@ def build_filename(infos,   format = None, tags=None):
         author_info = infos['author']
     if 'authors' in infos.keys() and len(infos['authors'])>len(author_info):
         author_info = infos['authors']
+# new format
+    if '{pylit}' in rep_dict.keys():
+        if isinstance(author_info,list):
+            lastnames = [author['family'] for author in author_info if 'family' in author]
+        elif isinstance(author_info,str):
+            authors = [author.strip() for author in author_info.split(" and ")]
+            lastnames = [name.split()[-1] for name in authors]
+            firstnames = [name.split()[:-1] if len(name.split())>1 else [''] for name in authors] 
+        if lastnames:    
+            rep_dict['{pylit}'] = lastnames[0] 
+        else:
+            rep_dict['{pylit}'] = '[NoAuthor]'
+        
+        rep_dict['{pylit}'] += infos['year'][2:] if ('year' in infos and is_valid_integer(infos['year'],4)) else '0000'
+        
+        
+
     
-    ListAuthorTags = ['{Aall}','{A3etal}','{Aetal}','{aAall}','{aA3etal}','{aAetal}']
+    ListAuthorTags = ['{Aall}','{A3etal}','{Aetal}','{aAall}','{aA3etal}','{aAetal}','{pylit}']
     if any(item in rep_dict.keys() for item in ListAuthorTags): #Chec if any of the tag chosen by the user is one of the author tags defined in ListAuthorTags
         if author_info:
             # The variable author_info comes from the metadata genereated by pdf2bib, and its type/value depend on how the metadata was retrieved.
